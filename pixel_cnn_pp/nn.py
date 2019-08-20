@@ -3,6 +3,8 @@ Various tensorflow utilities
 """
 
 import numpy as np
+import math
+
 import tensorflow as tf
 from tensorflow.contrib.framework.python.ops import add_arg_scope
 
@@ -43,7 +45,7 @@ def energy_distance(x, x_sample):
 
     return 2.*l1 - l2
 
-def discretized_mix_logistic_loss(x,l,sum_all=True):
+def discretized_mix_logistic_loss(x,l,sum_all=True, focal_loss=False, gamma=2):
     """ log-likelihood for mixture of discretized logistics, assumes the data has been rescaled to [-1,1] interval """
     xs = int_shape(x) # true image (i.e. labels) to regress to, e.g. (B,32,32,3)
     ls = int_shape(l) # predicted distribution, e.g. (B,32,32,100)
@@ -82,12 +84,18 @@ def discretized_mix_logistic_loss(x,l,sum_all=True):
 
     log_probs = tf.reduce_sum(log_probs,3) + log_prob_from_logits(logit_probs)
     if sum_all:
-        return -tf.reduce_sum(log_sum_exp(log_probs))
+        log_pt = tf.reduce_sum(log_sum_exp(log_probs)) 
+        # Focal Loss for Dense Object Detection -Section 3.2
+        # arXiv:1708.02002v2 [cs.CV] 7 Feb 2018
+        if focal_loss:
+            return (1 - math.exp(log_pt))**gamma * (-log_pt)
+        else:
+            return -log_pt
     else:
         return -tf.reduce_sum(log_sum_exp(log_probs),[1,2])
 
 
-def discretized_mix_logistic_loss_1d(x,l,sum_all=True):
+def discretized_mix_logistic_loss_1d(x,l,sum_all=True, focal_loss=False, gamma=2):
     """ 
         log-likelihood for mixture of discretized logistics, assumes the data has been rescaled to [-1,1] interval 
 
@@ -96,13 +104,13 @@ def discretized_mix_logistic_loss_1d(x,l,sum_all=True):
         # https://github.com/pclucas14/pixel-cnn-pp
     """
 
-    xs = int_shape(x) # true image (i.e. labels) to regress to, e.g. (B,32,32,3)
-    ls = int_shape(l) # predicted distribution, e.g. (B,32,32,100)
+    xs = int_shape(x) # true image (i.e. labels) to regress to, e.g. (B,32,32,1)
+    ls = int_shape(l) # predicted distribution, e.g. (B,32,32,30)
     nr_mix = int(ls[-1] / 3) # here and below: unpacking the params of the mixture of logistics
     logit_probs = l[:,:,:,:nr_mix]
     l = tf.reshape(l[:,:,:,nr_mix:], xs + [nr_mix*2])
     means = l[:,:,:,:,:nr_mix]
-    log_scales = tf.maximum(l[:,:,:,:,nr_mix:2*nr_mix], -7.)
+    log_scales = tf.maximum(l[:,:,:,:,nr_mix:2*nr_mix], -7.) # -7 is ~exp(1-0.999)
     # coeffs = tf.nn.tanh(l[:,:,:,:,2*nr_mix:3*nr_mix])
     x = tf.reshape(x, xs + [1]) + tf.zeros(xs + [nr_mix]) # here and below: getting the means and adjusting them based on preceding sub-pixels
     # m2 = tf.reshape(means[:,:,:,1,:] + coeffs[:, :, :, 0, :] * x[:, :, :, 0, :], [xs[0],xs[1],xs[2],1,nr_mix])
@@ -133,8 +141,15 @@ def discretized_mix_logistic_loss_1d(x,l,sum_all=True):
 
     log_probs = tf.reduce_sum(log_probs,3) + log_prob_from_logits(logit_probs)
     if sum_all:
-        return -tf.reduce_sum(log_sum_exp(log_probs))
+        log_pt = tf.reduce_sum(log_sum_exp(log_probs))
+        # Focal Loss for Dense Object Detection -Section 3.2
+        # arXiv:1708.02002v2 [cs.CV] 7 Feb 2018
+        if focal_loss:
+            return (1 - math.exp(log_pt))**gamma * (-log_pt)
+        else:
+            return -log_pt
     else:
+        # TODO: Add focal loss for sum_all = False
         return -tf.reduce_sum(log_sum_exp(log_probs),[1,2])
 
 def sample_from_discretized_mix_logistic(l,nr_mix):

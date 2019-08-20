@@ -1,7 +1,59 @@
-**Status:** Archive (code is provided as-is, no updates expected)
-
-
 # pixel-cnn++
+
+This is a fork of: https://github.com/openai/pixel-cnn
+
+The following enhancements are added:
+
+## 1. Support for MNIST dataset
+
+The original code supports CIFAR-10 and Small Imagenet. Support for MNIST is added. 
+
+Use the following command line option to use MNIST:
+```
+--data_set='mnist'
+```
+
+The MNIST support is adapted from a PyTorch implementation of PixelCNN++: https://github.com/pclucas14/pixel-cnn-pp
+
+
+## 2. CoordConv
+
+Based on the paper:
+["An intriguing failing of convolutional neural networks and the CoordConv solution"](https://arxiv.org/pdf/1807.03247)
+
+Use the following command line option to add CoordConv channels:
+```
+-ac
+```
+
+The code for this adapted from section S9 of the paper
+
+## 3. Non-Local Neural Networks
+
+Based on the paper:
+["Non-local Neural Networks"](https://arxiv.org/abs/1711.07971)
+
+Use the following command line option to add CoordConv channels:
+```
+-nl
+```
+
+The code for this is adapted from https://github.com/lucasb-eyer/nonlocal-tf
+
+## 4. Focal Loss for Dense Object Detection
+
+Based on the paper:
+["Focal Loss for Dense Object Detection"](https://arxiv.org/abs/1708.02002)
+
+Use the following command line option to add CoordConv channels:
+```
+-fl
+```
+
+## 5. Original Text 
+
+From: https://github.com/openai/pixel-cnn
+
 
 This is a Python3 / [Tensorflow](https://www.tensorflow.org/) implementation 
 of [PixelCNN++](https://openreview.net/pdf?id=BJrFC6ceg), as described in the following 
