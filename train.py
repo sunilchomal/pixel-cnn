@@ -198,7 +198,9 @@ if not os.path.exists(args.save_dir):
     os.makedirs(args.save_dir)
 test_bpd = []
 lr = args.learning_rate
-with tf.Session() as sess:
+
+# https://github.com/tensorflow/tensorflow/issues/14085
+with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
     for epoch in range(args.max_epochs):
         begin = time.time()
 
