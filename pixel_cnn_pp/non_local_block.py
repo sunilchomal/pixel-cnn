@@ -6,6 +6,7 @@
 
 """
 import tensorflow as tf
+from tensorflow.contrib.framework.python.ops import add_arg_scope
 
 def conv2d_same(inputs, num_outputs, kernel_size, stride, rate=1, scope=None):
     """Strided 2-D convolution with 'SAME' padding.
