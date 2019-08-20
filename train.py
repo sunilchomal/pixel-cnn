@@ -50,6 +50,7 @@ parser.add_argument('-s', '--seed', type=int, default=1, help='Random seed to us
 # enhancements
 parser.add_argument('-ac', '--add_coords', dest='add_coords', action='store_true', help='add layers of x & y coordinates')
 parser.add_argument('-nl', '--non_local', dest='non_local', action='store_true', help='add Non-Local NN')
+parser.add_argument('-fl', '--focal_loss', dest='focal_loss', action='store_true', help='add focal loss to cross entropy loss')
 
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',',':'))) # pretty print args
@@ -68,6 +69,14 @@ else:
         loss_fun = nn.discretized_mix_logistic_loss_1d
     else:
         loss_fun = nn.discretized_mix_logistic_loss
+
+# Focal Loss for Dense Object Detection -Section 3.2
+# arXiv:1708.02002v2 [cs.CV] 7 Feb 2018
+if args.focal_loss:
+    fl = True
+    print("add focal loss to cross entropy loss")
+else:
+    fl = False
 
 # initialize data loaders for train/test splits
 if args.data_set == 'imagenet' and args.class_conditional:
@@ -132,14 +141,14 @@ for i in range(args.nr_gpu):
     with tf.device('/gpu:%d' % i):
         # train
         out = model(xs[i], hs[i], ema=None, dropout_p=args.dropout_p, **model_opt)
-        loss_gen.append(loss_fun(tf.stop_gradient(xs[i]), out))
+        loss_gen.append(loss_fun(tf.stop_gradient(xs[i]), out, focal_loss=fl))
 
         # gradients
         grads.append(tf.gradients(loss_gen[i], all_params, colocate_gradients_with_ops=True))
 
         # test
         out = model(xs[i], hs[i], ema=ema, dropout_p=0., **model_opt)
-        loss_gen_test.append(loss_fun(xs[i], out))
+        loss_gen_test.append(loss_fun(xs[i], out, focal_loss=fl))
 
         # sample
         out = model(xs[i], h_sample[i], ema=ema, dropout_p=0, **model_opt)
