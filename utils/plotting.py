@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 def plot_img(img, title=None):
     plt.figure()
     
-    if img.shape[2] == 1:
+    if len(img.shape) == 2:
         plt.imshow(img, cmap='gray', interpolation='nearest')
     else:
         plt.imshow(img, interpolation='nearest')

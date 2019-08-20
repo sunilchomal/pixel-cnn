@@ -210,6 +210,10 @@ def adam_updates(params, cost_or_grads, lr=0.001, mom1=0.9, mom2=0.999):
         grads = cost_or_grads
     t = tf.Variable(1., 'adam_t')
     for p, g in zip(params, grads):
+        # non-local NN block has 0 gradiant, which comes up as None
+        # ship those params
+        if g is None:
+            continue
         mg = tf.Variable(tf.zeros(p.get_shape()), p.name + '_adam_mg')
         if mom1>0:
             v = tf.Variable(tf.zeros(p.get_shape()), p.name + '_adam_v')
