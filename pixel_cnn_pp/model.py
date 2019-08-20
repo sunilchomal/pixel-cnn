@@ -6,6 +6,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.framework.python.ops import arg_scope
 import pixel_cnn_pp.nn as nn
+from pixel_cnn_pp.CoordConv import AddCoords
 
 def model_spec(x, h=None, init=False, ema=None, dropout_p=0.5, nr_resnet=5, nr_filters=160, nr_logistic_mix=10, resnet_nonlinearity='concat_elu', energy_distance=False):
     """
@@ -33,6 +34,13 @@ def model_spec(x, h=None, init=False, ema=None, dropout_p=0.5, nr_resnet=5, nr_f
 
             # ////////// up pass through pixelCNN ////////
             xs = nn.int_shape(x)
+            
+            # add coordinate channels before thef irst convolution
+            # TODO: Is padding still required after this?
+
+            addcoords = AddCoords(x_dim=xs[1], y_dim=xs[2], with_r=False)
+            x = addcoords(x)
+
             channels = xs[3]
             x_pad = tf.concat([x,tf.ones(xs[:-1]+[1])],3) # add channel of ones to distinguish image from padding later on
             u_list = [nn.down_shift(nn.down_shifted_conv2d(x_pad, num_filters=nr_filters, filter_size=[2, 3]))] # stream for pixels above
