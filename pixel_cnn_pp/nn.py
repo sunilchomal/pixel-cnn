@@ -88,7 +88,7 @@ def discretized_mix_logistic_loss(x,l,sum_all=True, focal_loss=False, gamma=2):
         # Focal Loss for Dense Object Detection -Section 3.2
         # arXiv:1708.02002v2 [cs.CV] 7 Feb 2018
         if focal_loss:
-            return (1 - math.exp(log_pt))**gamma * (-log_pt)
+            return (1 - tf.math.exp(log_pt))**gamma * (-log_pt)
         else:
             return -log_pt
     else:
@@ -145,7 +145,7 @@ def discretized_mix_logistic_loss_1d(x,l,sum_all=True, focal_loss=False, gamma=2
         # Focal Loss for Dense Object Detection -Section 3.2
         # arXiv:1708.02002v2 [cs.CV] 7 Feb 2018
         if focal_loss:
-            return (1 - math.exp(log_pt))**gamma * (-log_pt)
+            return (1 - tf.math.exp(log_pt))**gamma * (-log_pt)
         else:
             return -log_pt
     else:
