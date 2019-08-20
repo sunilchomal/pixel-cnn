@@ -33,6 +33,7 @@ def model_spec(x, h=None, init=False, ema=None, dropout_p=0.5, nr_resnet=5, nr_f
 
             # ////////// up pass through pixelCNN ////////
             xs = nn.int_shape(x)
+            channels = xs[3]
             x_pad = tf.concat([x,tf.ones(xs[:-1]+[1])],3) # add channel of ones to distinguish image from padding later on
             u_list = [nn.down_shift(nn.down_shifted_conv2d(x_pad, num_filters=nr_filters, filter_size=[2, 3]))] # stream for pixels above
             ul_list = [nn.down_shift(nn.down_shifted_conv2d(x_pad, num_filters=nr_filters, filter_size=[1,3])) + \
@@ -108,7 +109,10 @@ def model_spec(x, h=None, init=False, ema=None, dropout_p=0.5, nr_resnet=5, nr_f
                 return x_sample
 
             else:
-                x_out = nn.nin(tf.nn.elu(ul),10*nr_logistic_mix)
+                if channels == 1:
+                    x_out = nn.nin(tf.nn.elu(ul),3*nr_logistic_mix)
+                else:
+                    x_out = nn.nin(tf.nn.elu(ul),10*nr_logistic_mix)
 
                 assert len(u_list) == 0
                 assert len(ul_list) == 0
