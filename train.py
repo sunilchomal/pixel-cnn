@@ -57,9 +57,13 @@ tf.set_random_seed(args.seed)
 
 # energy distance or maximum likelihood?
 if args.energy_distance:
+    # TODO: Needs to be updated for mnist / 1 channel data
     loss_fun = nn.energy_distance
 else:
-    loss_fun = nn.discretized_mix_logistic_loss
+    if args.data_set == 'mnist':
+        loss_fun = nn.discretized_mix_logistic_loss_1d
+    else:
+        loss_fun = nn.discretized_mix_logistic_loss
 
 # initialize data loaders for train/test splits
 if args.data_set == 'imagenet' and args.class_conditional:
@@ -70,6 +74,9 @@ if args.data_set == 'cifar':
 elif args.data_set == 'imagenet':
     import data.imagenet_data as imagenet_data
     DataLoader = imagenet_data.DataLoader
+elif args.data_set == 'mnist':
+    import data.mnist_data as mnist_data
+    DataLoader = mnist_data.DataLoader
 else:
     raise("unsupported dataset")
 train_data = DataLoader(args.data_dir, 'train', args.batch_size * args.nr_gpu, rng=rng, shuffle=True, return_labels=args.class_conditional)
@@ -129,9 +136,13 @@ for i in range(args.nr_gpu):
         # sample
         out = model(xs[i], h_sample[i], ema=ema, dropout_p=0, **model_opt)
         if args.energy_distance:
+            # TODO: Needs to be updated for mnist / 1 channel data
             new_x_gen.append(out[0])
         else:
-            new_x_gen.append(nn.sample_from_discretized_mix_logistic(out, args.nr_logistic_mix))
+            if args.data_set == 'mnist':
+                new_x_gen.append(nn.sample_from_discretized_mix_logistic_1d(out, args.nr_logistic_mix))
+            else:
+                new_x_gen.append(nn.sample_from_discretized_mix_logistic(out, args.nr_logistic_mix))
 
 # add losses and gradients together and get training updates
 tf_lr = tf.placeholder(tf.float32, shape=[])
@@ -237,7 +248,9 @@ with tf.Session() as sess:
                 sample_x.append(sample_from_model(sess))
             sample_x = np.concatenate(sample_x,axis=0)
             img_tile = plotting.img_tile(sample_x[:100], aspect_ratio=1.0, border_color=1.0, stretch=True)
-            img = plotting.plot_img(img_tile, title=args.data_set + ' samples')
+            if args.data_set == 'mnist':
+                img_tile = np.squeeze(img_tile, axis=2)
+            plotting.plot_img(img_tile, title=args.data_set + ' samples')
             plotting.plt.savefig(os.path.join(args.save_dir,'%s_sample%d.png' % (args.data_set, epoch)))
             plotting.plt.close('all')
             np.savez(os.path.join(args.save_dir,'%s_sample%d.npz' % (args.data_set, epoch)), sample_x)
