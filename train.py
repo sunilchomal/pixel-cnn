@@ -47,6 +47,10 @@ parser.add_argument('--polyak_decay', type=float, default=0.9995, help='Exponent
 parser.add_argument('-ns', '--num_samples', type=int, default=1, help='How many batches of samples to output.')
 # reproducibility
 parser.add_argument('-s', '--seed', type=int, default=1, help='Random seed to use')
+# enhancements
+parser.add_argument('-ac', '--add_coords', dest='add_coords', action='store_true', help='add layers of x & y coordinates')
+parser.add_argument('-nl', '--non_local', dest='non_local', action='store_true', help='add Non-Local NN')
+
 args = parser.parse_args()
 print('input args:\n', json.dumps(vars(args), indent=4, separators=(',',':'))) # pretty print args
 
@@ -103,7 +107,11 @@ else:
     hs = h_sample
 
 # create the model
-model_opt = { 'nr_resnet': args.nr_resnet, 'nr_filters': args.nr_filters, 'nr_logistic_mix': args.nr_logistic_mix, 'resnet_nonlinearity': args.resnet_nonlinearity, 'energy_distance': args.energy_distance }
+model_opt = { 
+                'nr_resnet': args.nr_resnet, 'nr_filters': args.nr_filters, 'nr_logistic_mix': args.nr_logistic_mix, 
+                'resnet_nonlinearity': args.resnet_nonlinearity, 'energy_distance': args.energy_distance,
+                'add_coords': args.add_coords, 'non_local': args.non_local 
+            }
 model = tf.make_template('model', model_spec)
 
 # run once for data dependent initialization of parameters

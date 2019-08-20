@@ -6,9 +6,11 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.contrib.framework.python.ops import arg_scope
 import pixel_cnn_pp.nn as nn
+import pixel_cnn_pp.non_local_block as nl
 from pixel_cnn_pp.CoordConv import AddCoords
 
-def model_spec(x, h=None, init=False, ema=None, dropout_p=0.5, nr_resnet=5, nr_filters=160, nr_logistic_mix=10, resnet_nonlinearity='concat_elu', energy_distance=False):
+def model_spec(x, h=None, init=False, ema=None, dropout_p=0.5, nr_resnet=5, nr_filters=160, nr_logistic_mix=10, 
+                resnet_nonlinearity='concat_elu', energy_distance=False, add_coords=False, non_local=False):
     """
     We receive a Tensor x of shape (N,H,W,D1) (e.g. (12,32,32,3)) and produce
     a Tensor x_out of shape (N,H,W,D2) (e.g. (12,32,32,100)), where each fiber
@@ -35,11 +37,21 @@ def model_spec(x, h=None, init=False, ema=None, dropout_p=0.5, nr_resnet=5, nr_f
             # ////////// up pass through pixelCNN ////////
             xs = nn.int_shape(x)
             
-            # add coordinate channels before thef irst convolution
+            # add a non-local information to the image
+            # TODO: Experiment (thought & physical) to figure out the number of & locations
+            #       of the non-local NN
+
+            if non_local:
+                print('Adding Non-Local NN block')
+                x = nl.nonlocal_dot(x, depth=64)
+            
+            # add coordinate channels before the first convolution
             # TODO: Is padding still required after this?
 
-            addcoords = AddCoords(x_dim=xs[1], y_dim=xs[2], with_r=False)
-            x = addcoords(x)
+            if add_coords:
+                print('Adding CoordConv layers')
+                addcoords = AddCoords(x_dim=xs[1], y_dim=xs[2], with_r=False)
+                x = addcoords(x)
 
             channels = xs[3]
             x_pad = tf.concat([x,tf.ones(xs[:-1]+[1])],3) # add channel of ones to distinguish image from padding later on
